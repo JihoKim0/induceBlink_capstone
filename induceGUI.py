@@ -7,6 +7,7 @@ import time
 import winsound as sd
 import os
 import sys
+from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 #QMainWindow, QApplication, QWidget, QTabWidget, QLabel, QVBoxLayout, QHboxLayout, QRadioButton, Grid
 
@@ -17,6 +18,8 @@ class BlinkApp(QMainWindow):
         self.initUI()
         self.setWindowTitle('Induce Blink Program')
         self.setFixedSize(1000, 800)
+        x = Thread(self)
+        x.start()
 
     def initUI(self):
         tabs = QTabWidget()
@@ -128,8 +131,51 @@ def crop_eye(img, eye_points):
     eye_img = img[eye_rect[1]:eye_rect[3], eye_rect[0]:eye_rect[2]]
     return eye_img, eye_rect
 
+class Thread(QThread):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.parent = parent
+
+    def run(self):
+        if alert.active == 1:
+            cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+            while cap.isOpened():
+                ret, img_cam = cap.read()
+
+                if not ret:
+                    break
+
+                img = img_cam.copy()
+                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                faces = detector(gray)
+                for face in faces:
+                    shapes = predictor(gray, face)
+                    shapes = face_utils.shape_to_np(shapes)
+
+                    eye_img_l, eye_rect_l = crop_eye(gray, eye_points=shapes[36:42])
+                    eye_img_r, eye_rect_r = crop_eye(gray, eye_points=shapes[42:48])
+                    eye_img_l = cv2.resize(eye_img_l, dsize=IMG_SIZE)
+                    eye_img_r = cv2.resize(eye_img_r, dsize=IMG_SIZE)
+                    eye_img_r = cv2.flip(eye_img_r, flipCode=1)
+                    eye_input_l = eye_img_l.copy().reshape((1, IMG_SIZE[1], IMG_SIZE[0], 1)).astype(np.float32) / 255.
+                    eye_input_r = eye_img_r.copy().reshape((1, IMG_SIZE[1], IMG_SIZE[0], 1)).astype(np.float32) / 255.
+                    pred_l = model.predict(eye_input_l)
+                    pred_r = model.predict(eye_input_r)
+                    # visualize
+                    state_l = 'O %.1f' if pred_l > 0.1 else '- %.1f'
+                    state_r = 'O %.1f' if pred_r > 0.1 else '- %.1f'
+                    state_l = state_l % pred_l
+                    state_r = state_r % pred_r 
+                    #pred_l && pred_r < 0.5 -> return Blink alert sign
+                    if pred_l < 0.3 and pred_r < 0.3:
+                        alert.start = time.time()
+
+                    if (time.time() - alert.start) > alert.time:
+                        beepsound()
+                        alert.start = time.time()
+                    QApplication.processEvents()
 #blink main
-def main():
+'''def main():
     QApplication.processEvents()
     if alert.active == 1:
         cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
@@ -168,12 +214,11 @@ def main():
                     beepsound()
                     alert.start = time.time()
                 QApplication.processEvents()
-                #process pending events
-            
+                #process pending events'''
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = BlinkApp()
     ex.show()
-    main()
+    #main()
     sys.exit(app.exec_())
