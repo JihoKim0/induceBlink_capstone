@@ -11,6 +11,9 @@ from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 #QMainWindow, QApplication, QWidget, QTabWidget, QLabel, QVBoxLayout, QHboxLayout, QRadioButton, Grid
 import recognition as rcg
+from matplotlib.backends.backend_qt5agg import FigureCanvas as fcanva
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as navi
+from matplotlib.figure import Figure
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
@@ -119,8 +122,18 @@ class BlinkApp(QMainWindow):
         rcg.alert.time = 3
         self.labelNum.setText(str(rcg.alert.time))
 
+
     def tab2(self):
+        canvas = fcanva(Figure(figsize=(4, 3)))
+        vbox = QVBoxLayout()
+        vbox.addWidget(canvas)
+
+        self.ax = canvas.figure.subplots()
+        self.ax.plot([0, 1, 2], [1, 5, 3], '-')
+        self.setGeometry(300, 100, 600, 400)
+        self.show()
         tab = QWidget()
+        tab.setLayout(vbox)
         return tab
 
 
