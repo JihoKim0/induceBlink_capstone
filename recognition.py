@@ -32,9 +32,9 @@ class blinkThread(QThread):
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             faces = detector(gray)
 
-            cv2.imshow('result', img)
-            if cv2.waitKey(1) & 0xFF == 27:
-                break
+            # cv2.imshow('result', img)
+            # if cv2.waitKey(1) & 0xFF == 27:
+            #     break
             
             for face in faces:
                 shapes = predictor(gray, face)
@@ -56,8 +56,10 @@ class blinkThread(QThread):
                 #pred_l && pred_r < 0.5 -> return Blink alert sign
                 if pred_l < 0.3 and pred_r < 0.3:
                     alert.start = time.time()
+                    alert.total_blink += 1
                 if (time.time() - alert.start) > alert.time:
                     beepsound()
+                    alert.total_time += ( time.time() - alert.start )
                     alert.start = time.time()
 
     def stop(self):
@@ -79,11 +81,14 @@ def crop_eye(img, eye_points):
     eye_img = img[eye_rect[1]:eye_rect[3], eye_rect[0]:eye_rect[2]]
     return eye_img, eye_rect
 
+#알림 관련 클래스
 class Alert:
     active = 1
     start = 0
     time = 3
     type = 0
+    total_time = 0
+    total_blink = 0
 
     def activate(self, on): #activate alert
         self.active = on
