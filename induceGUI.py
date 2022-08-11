@@ -14,6 +14,11 @@ import recognition as rcg
 from matplotlib.backends.backend_qt5agg import FigureCanvas as fcanva
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as navi
 from matplotlib.figure import Figure
+import datetime
+import sqlite3
+
+con = sqlite3.connect('practice.db')
+
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
@@ -101,6 +106,23 @@ class BlinkApp(QMainWindow):
         self.blink.start()
 
     def Off(self):
+        with con:
+            cur = con.cursor()
+            D = datetime.date.today()
+            cur.execute("select recognition from EYEDATA where day = '%s'" % D)
+            recog_time = cur.fetchone()
+            if recog_time:
+                rcg.alert.total_time = rcg.alert.total_time + recog_time[0]
+            
+            cur.execute("select blink_count from EYEDATA where day = '%s'" % D)
+            blinkCnt = cur.fetchone()
+            if blinkCnt:
+                rcg.alert.total_blink = rcg.alert.total_blink + blinkCnt[0]
+
+            total_time = rcg.alert.total_time
+            blink_count = rcg.alert.total_blink
+            cur.execute("insert or replace into EYEDATA values('%s', %d, %d)" % (D, total_time, blink_count))
+        
         rcg.alert.activate(0)
         self.blink.stop()
 
