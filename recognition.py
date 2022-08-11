@@ -7,6 +7,7 @@ from imutils import face_utils
 from tensorflow.keras.models import load_model
 import sys
 from PyQt5.QtCore import *
+import math
 
 
 IMG_SIZE = (34, 26)
@@ -57,9 +58,10 @@ class blinkThread(QThread):
                 if pred_l < 0.3 and pred_r < 0.3:
                     alert.start = time.time()
                     alert.total_blink += 1
-                if (time.time() - alert.start) > alert.time:
+                timeCnt = time.time() - alert.start
+                if timeCnt > alert.time:
                     beepsound()
-                    alert.total_time += ( time.time() - alert.start )
+                    alert.total_time += int(timeCnt)
                     alert.start = time.time()
 
     def stop(self):
