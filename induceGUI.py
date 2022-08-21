@@ -39,8 +39,8 @@ class BlinkApp(QMainWindow):
     def initUI(self):
         tabs = QTabWidget()
         tabs.addTab(self.tab1(), 'Settings')
-        tabs.addTab(self.tab2(), 'blink')
-        #tabs.addTab(self.tab3(), 'recognition time')
+        tabs.addTab(self.tab2(), 'Day Graph')
+        tabs.addTab(self.tab3(), 'Month Graph')
         self.setCentralWidget(tabs)
         
 #setFont QFont 써보기
@@ -177,37 +177,52 @@ class BlinkApp(QMainWindow):
         for i in range(0, len(day)):
             self.ax2.text(i, recognition[i], recognition[i], color='purple', size=15, ha="left")
             self.ax.text(i, blink_count[i], blink_count[i], color='green', size=13, ha="right")
+        self.ax.set_ylabel('blink count')
+        self.ax.set_xlabel('day')
+        self.ax2.set_ylabel('recognition time')
         self.show()
 
         tab = QWidget()
         tab.setLayout(vbox)
         return tab
 
-    '''def tab3(self):
-        grid = QGridLayout()
-        self.setLayout(grid)
+    def tab3(self):
+        self.main_widget = QWidget()
+        self.setCentralWidget(self.main_widget)
 
-        refreshBtn = QPushButton('🔄️', self)
-        refreshBtn.clicked.connect()
-        grid.addWidget()
+        canvas = fcanva(Figure(figsize=(4, 3)))
+        vbox = QVBoxLayout(self.main_widget)
+        vbox.addWidget(canvas)
+
+        #fetch average data
+        cur = con.cursor()
+        cur.execute("select round(avg(recognition), 1) avgR, round(avg(blink_count), 1) avgB, strftime('%Y-%m', day) month\
+        from EYEDATA\
+        group by month\
+        order by month;")
+        data = cur.fetchall()
+        timeAvg = []
+        blinkAvg = []
+        day = []
+        for row in data:
+            timeAvg.append(row[0])
+            blinkAvg.append(row[1])
+            day.append(row[2])
+        self.ax = canvas.figure.subplots()
+        self.ax.bar(day, blinkAvg, color = 'green', alpha = 0.3)
+        self.ax2 = self.ax.twinx()
+        self.ax2.plot(day, timeAvg, color = 'purple')      
+        for i in range(0, len(day)):
+            self.ax2.text(i, timeAvg[i], timeAvg[i], color='purple', size=15, ha="left")
+            self.ax.text(i, blinkAvg[i], blinkAvg[i], color='green', size=13, ha="right")
+        self.ax.set_ylabel('blink avg')
+        self.ax.set_xlabel('day')
+        self.ax2.set_ylabel('recognition time avg')
+        self.show()
 
         tab = QWidget()
-        tab.setLayout(grid)
+        tab.setLayout(vbox)
         return tab
-    
-    def graph(self, x, y):
-        with con:
-            cur = con.cursor()
-            cur.execute("SELECT day, blink_count FROM EYEDATA")
-            data = cur.fetchall()
-            day = []
-            blink_count = []
-            for row in data:
-                day.append(row[0])
-                blink_count.append(row[1])
-            self.ax = canvas.figure.subplots()
-            self.ax.plot(day, blink_count)
-            self.show()'''
 
 
 
