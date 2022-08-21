@@ -14,6 +14,8 @@ import recognition as rcg
 from matplotlib.backends.backend_qt5agg import FigureCanvas as fcanva
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as navi
 from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
+from pylab import show
 import datetime
 import sqlite3
 
@@ -37,7 +39,8 @@ class BlinkApp(QMainWindow):
     def initUI(self):
         tabs = QTabWidget()
         tabs.addTab(self.tab1(), 'Settings')
-        tabs.addTab(self.tab2(), 'Transition')
+        tabs.addTab(self.tab2(), 'blink')
+        #tabs.addTab(self.tab3(), 'recognition time')
         self.setCentralWidget(tabs)
         
 #setFont QFont 써보기
@@ -106,6 +109,8 @@ class BlinkApp(QMainWindow):
         self.blink.start()
 
     def Off(self):
+        rcg.alert.activate(0)
+        self.blink.stop()
         with con:
             cur = con.cursor()
             D = datetime.date.today()
@@ -122,9 +127,7 @@ class BlinkApp(QMainWindow):
             total_time = rcg.alert.total_time
             blink_count = rcg.alert.total_blink
             cur.execute("insert or replace into EYEDATA values('%s', %d, %d)" % (D, total_time, blink_count))
-        
-        rcg.alert.activate(0)
-        self.blink.stop()
+
 
     def decrease(self):
         rcg.alert.time -= 1
@@ -143,20 +146,69 @@ class BlinkApp(QMainWindow):
     def default(self):
         rcg.alert.time = 3
         self.labelNum.setText(str(rcg.alert.time))
-
-
+    
     def tab2(self):
+        self.main_widget = QWidget()
+        self.setCentralWidget(self.main_widget)
+
         canvas = fcanva(Figure(figsize=(4, 3)))
-        vbox = QVBoxLayout()
+        vbox = QVBoxLayout(self.main_widget)
         vbox.addWidget(canvas)
 
+        #fetch last 7 days data
+        cur = con.cursor()
+        cur.execute("SELECT day, recognition, blink_count FROM EYEDATA ORDER BY day DESC limit 7")
+        data = cur.fetchall()
+        day = []
+        recognition = []
+        blink_count = []
+        for row in data:
+            day.append(row[0])
+            recognition.append(row[1])
+            blink_count.append(row[2])
+        #rearrangement datas
+        day.reverse()
+        recognition.reverse()
+        blink_count.reverse()
         self.ax = canvas.figure.subplots()
-        self.ax.plot([0, 1, 2], [1, 5, 3], '-')
-        self.setGeometry(300, 100, 600, 400)
+        self.ax.bar(day, blink_count, color = 'green', alpha = 0.3)
+        self.ax2 = self.ax.twinx()
+        self.ax2.plot(day, recognition, color = 'purple')      
+        for i in range(0, len(day)):
+            self.ax2.text(i, recognition[i], recognition[i], color='purple', size=15, ha="left")
+            self.ax.text(i, blink_count[i], blink_count[i], color='green', size=13, ha="right")
         self.show()
+
         tab = QWidget()
         tab.setLayout(vbox)
         return tab
+
+    '''def tab3(self):
+        grid = QGridLayout()
+        self.setLayout(grid)
+
+        refreshBtn = QPushButton('🔄️', self)
+        refreshBtn.clicked.connect()
+        grid.addWidget()
+
+        tab = QWidget()
+        tab.setLayout(grid)
+        return tab
+    
+    def graph(self, x, y):
+        with con:
+            cur = con.cursor()
+            cur.execute("SELECT day, blink_count FROM EYEDATA")
+            data = cur.fetchall()
+            day = []
+            blink_count = []
+            for row in data:
+                day.append(row[0])
+                blink_count.append(row[1])
+            self.ax = canvas.figure.subplots()
+            self.ax.plot(day, blink_count)
+            self.show()'''
+
 
 
 if __name__ == '__main__':
