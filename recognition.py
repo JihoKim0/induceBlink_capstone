@@ -61,7 +61,9 @@ class blinkThread(QThread):
                 timeCnt = time.time() - alert.start
                 if timeCnt > alert.time:
                     beepsound()
-                    alert.total_time += int(timeCnt)
+                    print(timeCnt)
+                    if timeCnt < 1000000:     #프로그램 실행이 늦는 경우를 방지
+                        alert.total_time += int(timeCnt)                    
                     alert.start = time.time()
 
     def stop(self):
