@@ -1,9 +1,5 @@
 import streamlit as st
-from PyQt5.QtCore import *
-from PyQt5.QtWidgets import *
-#QMainWindow, QApplication, QWidget, QTabWidget, QLabel, QVBoxLayout, QHboxLayout, QRadioButton, Grid
 import matplotlib.pyplot as plt
-from pylab import show
 import sqlite3
 
 
